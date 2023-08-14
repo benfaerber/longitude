@@ -1,0 +1,19 @@
+[package]
+name = "longitude"
+version = "0.1.0"
+authors = ["Benjamin Faerber"]
+license = "MIT"
+edition = "2021"
+keywords = ["coordinates", "mapping", "math", "maps"]
+description = "Work with real world coordinates in Rust!"
+readme = "README.md"
+homepage = "https://github.com/benfaerber/longitude"
+repository = "https://github.com/benfaerber/longitude"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.81"
+lazy_static = "1.4.0"
+libm = "0.2.5"
