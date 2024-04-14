@@ -1,3 +1,4 @@
+#[cfg(feature="serde")]
 use serde::{Serialize, Deserialize};
 use std::f64::consts::PI;
 use libm::atan2;
@@ -10,7 +11,8 @@ lazy_static! {
     pub static ref RADIUS_OF_EARTH: Distance = Distance::from_kilometers(6378.137);
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Direction {
     North,
     South,
@@ -18,7 +20,8 @@ pub enum Direction {
     West,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Location {
     pub latitude: f64,
     pub longitude: f64,

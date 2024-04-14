@@ -1,9 +1,11 @@
+#[cfg(feature="serde")]
 use serde::{Serialize, Deserialize};
 use std::cmp::Ordering;
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub, Mul, Div};
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DistanceUnit {
     Centimeters,
     Meters,
@@ -57,7 +59,8 @@ impl DistanceUnit {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Distance {
     unit: DistanceUnit,
     value: f64,
@@ -165,6 +168,18 @@ impl Mul<f64> for Distance {
     fn mul(self, multiplier: f64) -> Self {
         Self::from(
             self.value * multiplier,
+            self.unit
+        )
+    }
+}
+
+
+impl Div<f64> for Distance {
+    type Output = Self;
+
+    fn div(self, divisor: f64) -> Self {
+        Self::from(
+            self.value / divisor,
             self.unit
         )
     }
