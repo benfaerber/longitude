@@ -1,6 +1,6 @@
 [package]
 name = "longitude"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Benjamin Faerber"]
 license = "MIT"
 edition = "2021"
@@ -21,4 +21,4 @@ libm = "0.2.5"
 
 [features]
 default = []
-serde = ["dep:serde"]
+serde = ["dep:serde", "dep:serde_json"]
