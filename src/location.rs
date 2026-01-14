@@ -1,15 +1,21 @@
-#[cfg(feature="serde")]
-use serde::{Serialize, Deserialize};
-use std::f64::consts::PI;
-use libm::atan2;
-use std::fmt;
+use core::f64::consts::PI;
+#[cfg(feature = "std")]
+use core::fmt;
+#[cfg(feature = "std")]
 use lazy_static::lazy_static;
+use libm::{atan2, cos, pow, sin, sqrt};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use crate::measurement::Distance;
 
+#[cfg(feature = "std")]
 lazy_static! {
     pub static ref RADIUS_OF_EARTH: Distance = Distance::from_kilometers(6378.137);
 }
+
+#[cfg(not(feature = "std"))]
+pub static RADIUS_OF_EARTH: Distance = Distance::from_kilometers(6378.137);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -29,7 +35,10 @@ pub struct Location {
 
 impl Location {
     pub fn from(latitude: f64, longitude: f64) -> Self {
-        Self { latitude, longitude }
+        Self {
+            latitude,
+            longitude,
+        }
     }
 
     pub fn distance(&self, other: &Location) -> Distance {
@@ -40,11 +49,9 @@ impl Location {
         let d_lat = pi_180(lat2) - pi_180(lat1);
         let d_lng = pi_180(lng2) - pi_180(lng1);
 
-        let a = (d_lat / 2.).sin().powf(2.) +
-            pi_180(lat2).cos().powf(2.) *
-            (d_lng / 2.).sin().powf(2.);
+        let a = pow(sin(d_lat / 2.), 2.) + pow(cos(pi_180(lat2)), 2.) * pow(sin(d_lng / 2.), 2.);
 
-        let c = 2. * atan2(a.sqrt(), (1. - a).sqrt());
+        let c = 2. * atan2(sqrt(a), sqrt(1. - a));
 
         RADIUS_OF_EARTH.clone() * c
     }
@@ -55,18 +62,26 @@ impl Location {
 
         match direction {
             Direction::East | Direction::West => {
-                let offset = d * c / (self.latitude * PI / 180.).cos();
-                let scalar = if direction == Direction::East { 1. } else { -1. };
+                let offset = d * c / cos(self.latitude * PI / 180.);
+                let scalar = if direction == Direction::East {
+                    1.
+                } else {
+                    -1.
+                };
 
                 Self {
                     latitude: self.latitude,
                     longitude: self.longitude + (offset * scalar),
                 }
-            },
+            }
 
             Direction::North | Direction::South => {
                 let offset = d * c;
-                let scalar = if direction == Direction::North { 1. } else { -1. };
+                let scalar = if direction == Direction::North {
+                    1.
+                } else {
+                    -1.
+                };
 
                 Self {
                     latitude: self.latitude + (offset * scalar),
@@ -81,23 +96,24 @@ impl Location {
         let lng_dif = (self.longitude - other.longitude).abs();
         lat_dif + lng_dif
     }
-
-    pub fn to_string(&self) -> String {
-        format!("{},{}", self.latitude, self.longitude)
-    }
 }
 
+#[cfg(feature = "std")]
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{},{}", self.latitude, self.longitude)
     }
 }
 
-pub fn find_center_point(locations: Vec<&Location>) -> Location {
-    let (total_lat, total_lng) = locations.iter()
-        .fold((0.0, 0.0), |(alat, alng), Location {latitude, longitude}| {
-            (alat + latitude, alng + longitude)
-        });
+pub fn find_center_point(locations: &[Location]) -> Location {
+    let (total_lat, total_lng) = locations.iter().fold(
+        (0.0, 0.0),
+        |(alat, alng),
+         Location {
+             latitude,
+             longitude,
+         }| { (alat + latitude, alng + longitude) },
+    );
 
     let f_lat = total_lat / locations.len() as f64;
     let f_lng = total_lng / locations.len() as f64;

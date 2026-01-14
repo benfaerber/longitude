@@ -1,6 +1,6 @@
 [package]
 name = "longitude"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Benjamin Faerber"]
 license = "MIT"
 edition = "2021"
@@ -15,10 +15,11 @@ repository = "https://github.com/benfaerber/longitude"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional=true }
-serde_json = { version = "1.0.81", optional=true }
-lazy_static = "1.4.0"
+serde_json = { version = "1.0.81", optional = true }
+lazy_static = { version = "1.4.0", optional = true }
 libm = "0.2.5"
 
 [features]
-default = []
+default = ["std"]
+std = ["dep:lazy_static"]
 serde = ["dep:serde", "dep:serde_json"]
