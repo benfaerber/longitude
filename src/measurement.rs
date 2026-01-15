@@ -1,8 +1,10 @@
-#[cfg(feature="serde")]
-use serde::{Serialize, Deserialize};
-use std::cmp::Ordering;
-use std::ops::{Add, Sub, Mul, Div};
-use std::fmt;
+use core::cmp::Ordering;
+#[cfg(feature = "std")]
+use core::fmt;
+use core::ops::{Add, Div, Mul, Sub};
+use libm::trunc;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -31,6 +33,7 @@ impl DistanceUnit {
         }
     }
 
+    #[cfg(feature = "std")]
     fn abbreviation(&self) -> String {
         match self {
             DistanceUnit::Centimeters => "cm",
@@ -41,9 +44,11 @@ impl DistanceUnit {
             DistanceUnit::Feet => "ft",
             DistanceUnit::Yards => "yd",
             DistanceUnit::Miles => "mi",
-        }.into()
+        }
+        .into()
     }
 
+    #[cfg(feature = "std")]
     #[allow(dead_code)]
     fn name(&self) -> String {
         match self {
@@ -55,7 +60,8 @@ impl DistanceUnit {
             DistanceUnit::Feet => "feet",
             DistanceUnit::Yards => "yards",
             DistanceUnit::Miles => "miles",
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -67,20 +73,20 @@ pub struct Distance {
 }
 
 impl Distance {
-    pub fn from(value: f64, unit: DistanceUnit) -> Self {
+    pub const fn from(value: f64, unit: DistanceUnit) -> Self {
         Self { value, unit }
     }
 
-    pub fn from_kilometers(value: f64) -> Self {
+    pub const fn from_kilometers(value: f64) -> Self {
         Self::from(value, DistanceUnit::Kilometers)
     }
 
-    pub fn from_meters(value: f64) -> Self {
+    pub const fn from_meters(value: f64) -> Self {
         Self::from(value, DistanceUnit::Meters)
     }
 
     #[allow(dead_code)]
-    pub fn from_miles(value: f64) -> Self {
+    pub const fn from_miles(value: f64) -> Self {
         Self::from(value, DistanceUnit::Miles)
     }
 
@@ -110,17 +116,13 @@ impl Distance {
     pub fn miles(&self) -> f64 {
         self.in_unit(DistanceUnit::Miles)
     }
-
-    pub fn to_string(&self) -> String {
-        format!("{:.1}{}", self.value, self.unit.abbreviation())
-    }
 }
 
 const APPROX_EQUAL_PLACES: u8 = 3;
 fn approx_equal(a: f64, b: f64, decimal_places: u8) -> bool {
-    let factor = 10.0f64.powi(decimal_places as i32);
-    let a = (a * factor).trunc();
-    let b = (b * factor).trunc();
+    let factor = 10u32.pow(decimal_places as u32) as f64;
+    let a = trunc(a * factor);
+    let b = trunc(b * factor);
     a == b
 }
 
@@ -136,7 +138,8 @@ impl PartialEq for Distance {
 impl PartialOrd for Distance {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.in_unit(self.unit).partial_cmp(&other.in_unit(self.unit))
+        self.in_unit(self.unit)
+            .partial_cmp(&other.in_unit(self.unit))
     }
 }
 
@@ -144,10 +147,7 @@ impl Add for Distance {
     type Output = Self;
 
     fn add(self, other: Distance) -> Self {
-        Self::from(
-            self.value + other.in_unit(self.unit),
-            self.unit
-        )
+        Self::from(self.value + other.in_unit(self.unit), self.unit)
     }
 }
 
@@ -155,10 +155,7 @@ impl Sub for Distance {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Self::from(
-            self.value - other.in_unit(self.unit),
-            self.unit
-        )
+        Self::from(self.value - other.in_unit(self.unit), self.unit)
     }
 }
 
@@ -166,22 +163,15 @@ impl Mul<f64> for Distance {
     type Output = Self;
 
     fn mul(self, multiplier: f64) -> Self {
-        Self::from(
-            self.value * multiplier,
-            self.unit
-        )
+        Self::from(self.value * multiplier, self.unit)
     }
 }
-
 
 impl Div<f64> for Distance {
     type Output = Self;
 
     fn div(self, divisor: f64) -> Self {
-        Self::from(
-            self.value / divisor,
-            self.unit
-        )
+        Self::from(self.value / divisor, self.unit)
     }
 }
 
@@ -191,8 +181,9 @@ impl Default for Distance {
     }
 }
 
+#[cfg(feature = "std")]
 impl fmt::Display for Distance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{:.1}{}", self.value, self.unit.abbreviation())
     }
 }
