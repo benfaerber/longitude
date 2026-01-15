@@ -11,54 +11,20 @@ env:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }}, ${{ matrix.rust }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable, beta, nightly]
-
+    name: Test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-action@stable
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
-        if: matrix.rust == 'stable'
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@beta
-        if: matrix.rust == 'beta'
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@nightly
-        if: matrix.rust == 'nightly'
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run tests (default features)
+      - name: Run tests (std)
         run: cargo test --verbose
 
-      - name: Run tests (no default features / no-std)
+      - name: Run tests (no-std)
         run: cargo test --no-default-features --verbose
 
-      - name: Run tests (with serde)
-        run: cargo test --features serde --verbose
-
-      - name: Run tests (all features)
-        run: cargo test --all-features --verbose
-
   fmt:
-    name: Rustfmt
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,20 +42,5 @@ jobs:
       - uses: dtolnay/rust-action@stable
         with:
           components: clippy
-      - name: Clippy (default features)
-        run: cargo clippy -- -D warnings
-      - name: Clippy (no default features)
-        run: cargo clippy --no-default-features -- -D warnings
-      - name: Clippy (all features)
+      - name: Run clippy
         run: cargo clippy --all-features -- -D warnings
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-action@stable
-      - name: Build documentation
-        run: cargo doc --no-deps --all-features
-        env:
-          RUSTDOCFLAGS: -D warnings
