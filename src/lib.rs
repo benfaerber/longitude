@@ -1,7 +1,9 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 mod location;
 mod measurement;
 
-pub use location::{Location, Direction, find_center_point};
+pub use location::{find_center_point, Direction, Location};
 pub use measurement::{Distance, DistanceUnit};
 
 #[cfg(test)]
@@ -10,10 +12,10 @@ mod tests {
 
     #[test]
     fn unit_equality() {
-        let distance_a = Distance::from_kilometers(10.); 
+        let distance_a = Distance::from_kilometers(10.);
         let distance_b = Distance::from_miles(6.213712);
         let distance_c = Distance::from_kilometers(1.25);
-            
+
         assert!(distance_a == distance_b);
         assert!(distance_a != distance_c);
     }
@@ -32,7 +34,7 @@ mod tests {
         let location_b = Location::from(40.7945846, -111.6950349);
         let distance_a = location_a.distance(&location_b);
         let distance_b = Distance::from_kilometers(5.9868);
-        
+
         assert!(distance_a == distance_b);
     }
 
@@ -43,7 +45,7 @@ mod tests {
 
         let location_b = location_a.add(&distance_a, Direction::North);
         let location_result = Location::from(40.8622065532978, -111.7656248);
-    
+
         assert!(location_b == location_result)
     }
 }
