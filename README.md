@@ -1,4 +1,9 @@
-# Longitude [![crates.io](https://img.shields.io/crates/v/longitude.svg?logo=rust)](https://crates.io/crates/longitude)
+# Longitude
+
+[![crates.io](https://img.shields.io/crates/v/longitude.svg?logo=rust)](https://crates.io/crates/longitude)
+[![CI](https://github.com/benfaerber/longitude/actions/workflows/ci.yml/badge.svg)](https://github.com/benfaerber/longitude/actions/workflows/ci.yml)
+[![docs.rs](https://docs.rs/longitude/badge.svg)](https://docs.rs/longitude)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 A coordinate library in Rust. Dealing with coordinate math is tricky because you are trying to move a point on a spherical object (the earth). Manipulating the longitude is pretty straight forward as it is just the length from the North Pole to the South Pole. Latitude is a bit more complicated because the circumference of the earth varies based on how close you are to the equator. I use this library whenever I need to deal with interactive maps, triangulation, etc. I've used this in my app sardines and another app called Batch Watch.
 
 ## Dealing with Units of Distance
