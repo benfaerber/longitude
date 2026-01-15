@@ -413,4 +413,130 @@ mod tests {
         assert!(Direction::North != Direction::South);
         assert!(Direction::East != Direction::West);
     }
+
+    // ==================== Coordinate Normalization Tests ====================
+
+    #[test]
+    fn longitude_wraps_past_180() {
+        let location = Location::from(0.0, 170.0);
+        let distance = Distance::from_kilometers(2000.0); // ~18 degrees at equator
+
+        let result = location.add(&distance, Direction::East);
+
+        // Should wrap around to negative longitude
+        assert!(result.longitude >= -180.0);
+        assert!(result.longitude <= 180.0);
+    }
+
+    #[test]
+    fn longitude_wraps_past_negative_180() {
+        let location = Location::from(0.0, -170.0);
+        let distance = Distance::from_kilometers(2000.0);
+
+        let result = location.add(&distance, Direction::West);
+
+        // Should wrap around to positive longitude
+        assert!(result.longitude >= -180.0);
+        assert!(result.longitude <= 180.0);
+    }
+
+    #[test]
+    fn latitude_wraps_past_north_pole() {
+        let location = Location::from(80.0, 0.0);
+        let distance = Distance::from_kilometers(2000.0); // ~18 degrees
+
+        let result = location.add(&distance, Direction::North);
+
+        // Should bounce back from the pole and stay in valid range
+        assert!(result.latitude >= -90.0);
+        assert!(result.latitude <= 90.0);
+        // Latitude should be less than 90 (bounced back)
+        assert!(result.latitude < 90.0);
+    }
+
+    #[test]
+    fn latitude_wraps_past_south_pole() {
+        let location = Location::from(-80.0, 0.0);
+        let distance = Distance::from_kilometers(2000.0);
+
+        let result = location.add(&distance, Direction::South);
+
+        // Should bounce back from the pole and stay in valid range
+        assert!(result.latitude >= -90.0);
+        assert!(result.latitude <= 90.0);
+        // Latitude should be greater than -90 (bounced back)
+        assert!(result.latitude > -90.0);
+    }
+
+    #[test]
+    fn full_circumference_east_returns_near_origin() {
+        let location = Location::from(0.0, 0.0);
+        // Earth's circumference at equator is ~40,075 km
+        let distance = Distance::from_kilometers(40075.0);
+
+        let result = location.add(&distance, Direction::East);
+
+        // Should end up near the starting point
+        assert!(result.latitude >= -90.0 && result.latitude <= 90.0);
+        assert!(result.longitude >= -180.0 && result.longitude <= 180.0);
+        assert!((result.longitude - 0.0).abs() < 1.0); // Allow small error
+    }
+
+    #[test]
+    fn full_circumference_north_south() {
+        let location = Location::from(0.0, 0.0);
+        // Half circumference through the poles is ~20,000 km
+        let distance = Distance::from_kilometers(20000.0);
+
+        let result = location.add(&distance, Direction::North);
+
+        // Should end up on the other side of the Earth
+        assert!(result.latitude >= -90.0 && result.latitude <= 90.0);
+        assert!(result.longitude >= -180.0 && result.longitude <= 180.0);
+    }
+
+    #[test]
+    fn multiple_circumferences_stays_valid() {
+        let location = Location::from(45.0, 90.0);
+        // 3x Earth's circumference
+        let distance = Distance::from_kilometers(120000.0);
+
+        let result_east = location.add(&distance, Direction::East);
+        let result_north = location.add(&distance, Direction::North);
+
+        // All results should be in valid coordinate ranges
+        assert!(result_east.latitude >= -90.0 && result_east.latitude <= 90.0);
+        assert!(result_east.longitude >= -180.0 && result_east.longitude <= 180.0);
+        assert!(result_north.latitude >= -90.0 && result_north.latitude <= 90.0);
+        assert!(result_north.longitude >= -180.0 && result_north.longitude <= 180.0);
+    }
+
+    #[test]
+    fn pole_crossing_flips_longitude() {
+        let location = Location::from(85.0, 0.0);
+        // Go 10 degrees north, crossing the pole
+        let distance = Distance::from_kilometers(1112.0); // ~10 degrees
+
+        let result = location.add(&distance, Direction::North);
+
+        // After crossing the pole, longitude should flip by 180 degrees
+        // and latitude should bounce back
+        assert!(result.latitude >= -90.0 && result.latitude <= 90.0);
+        assert!(result.longitude >= -180.0 && result.longitude <= 180.0);
+        // Should be on the opposite side of the globe (longitude near 180 or -180)
+        assert!((result.longitude).abs() > 170.0);
+    }
+
+    #[test]
+    fn from_normalized_constructor() {
+        // Test the normalized constructor directly
+        let loc1 = Location::from_normalized(0.0, 270.0);
+        assert!((loc1.longitude - (-90.0)).abs() < 0.001);
+
+        let loc2 = Location::from_normalized(0.0, -270.0);
+        assert!((loc2.longitude - 90.0).abs() < 0.001);
+
+        let loc3 = Location::from_normalized(100.0, 0.0);
+        assert!(loc3.latitude >= -90.0 && loc3.latitude <= 90.0);
+    }
 }

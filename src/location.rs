@@ -3,7 +3,7 @@ use core::f64::consts::PI;
 use core::fmt;
 #[cfg(feature = "std")]
 use lazy_static::lazy_static;
-use libm::{atan2, cos, pow, sin, sqrt};
+use libm::{atan2, cos, fmod, pow, sin, sqrt};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -33,11 +33,61 @@ pub struct Location {
     pub longitude: f64,
 }
 
+/// Normalizes longitude to the range [-180, 180].
+fn normalize_longitude(lng: f64) -> f64 {
+    let mut result = fmod(lng, 360.0);
+    if result > 180.0 {
+        result -= 360.0;
+    } else if result < -180.0 {
+        result += 360.0;
+    }
+    result
+}
+
+/// Normalizes latitude and longitude, handling pole crossings.
+/// When latitude exceeds 90 deg, it "bounces back" and longitude flips by 180 deg.
+fn normalize_coordinates(lat: f64, lng: f64) -> (f64, f64) {
+    // First, normalize latitude to [-180, 180] range by wrapping
+    let mut lat = fmod(lat, 360.0);
+    if lat > 180.0 {
+        lat -= 360.0;
+    } else if lat < -180.0 {
+        lat += 360.0;
+    }
+
+    let mut result_lat = lat;
+    let mut result_lng = lng;
+
+    // Handle pole crossings
+    if lat > 90.0 {
+        // Crossed north pole: bounce back and flip longitude
+        result_lat = 180.0 - lat;
+        result_lng += 180.0;
+    } else if lat < -90.0 {
+        // Crossed south pole: bounce back and flip longitude
+        result_lat = -180.0 - lat;
+        result_lng += 180.0;
+    }
+
+    (result_lat, normalize_longitude(result_lng))
+}
+
 impl Location {
     pub fn from(latitude: f64, longitude: f64) -> Self {
         Self {
             latitude,
             longitude,
+        }
+    }
+
+    /// Creates a new Location with normalized coordinates.
+    /// Latitude is clamped/wrapped to [-90, 90] with proper pole crossing handling.
+    /// Longitude is wrapped to [-180, 180].
+    pub fn from_normalized(latitude: f64, longitude: f64) -> Self {
+        let (lat, lng) = normalize_coordinates(latitude, longitude);
+        Self {
+            latitude: lat,
+            longitude: lng,
         }
     }
 
@@ -69,10 +119,8 @@ impl Location {
                     -1.
                 };
 
-                Self {
-                    latitude: self.latitude,
-                    longitude: self.longitude + (offset * scalar),
-                }
+                let new_lng = self.longitude + (offset * scalar);
+                Self::from_normalized(self.latitude, new_lng)
             }
 
             Direction::North | Direction::South => {
@@ -83,10 +131,8 @@ impl Location {
                     -1.
                 };
 
-                Self {
-                    latitude: self.latitude + (offset * scalar),
-                    longitude: self.longitude,
-                }
+                let new_lat = self.latitude + (offset * scalar);
+                Self::from_normalized(new_lat, self.longitude)
             }
         }
     }
